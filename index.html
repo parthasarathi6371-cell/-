@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Heart Model</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // 2. BOILERPLATE SETUP (Essential for Three.js to work)
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Add Light so we can see the materials
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(1, 1, 2).normalize();
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0x404040));
+        camera.position.z = 3;
+
+        // 3. YOUR HEART CODE
+        const heartColor = 0x990000;
+        const epicardiumMat = new THREE.MeshPhongMaterial({
+            color: heartColor,
+            transparent: true,
+            opacity: 0.3,
+            shininess: 100,
+            side: THREE.DoubleSide
+        });
+        const myocardiumMat = new THREE.MeshPhongMaterial({ color: 0x800000, shininess: 10 });
+        const endocardiumMat = new THREE.MeshPhongMaterial({ color: 0x440000, visible: false });
+
+        const geo = new THREE.SphereGeometry(1, 32, 32);
+        const position = geo.attributes.position;
+        for (let i = 0; i < position.count; i++) {
+            let y = position.getY(i);
+            let scale = 1 - (y + 1) * 0.3; 
+            position.setX(i, position.getX(i) * scale);
+            position.setZ(i, position.getZ(i) * scale);
+        }
+        position.needsUpdate = true; // Tell Three.js the shape changed
+
+        const myocardium = new THREE.Mesh(geo, myocardiumMat);
+        const epicardium = new THREE.Mesh(geo, epicardiumMat);
+        const endocardium = new THREE.Mesh(geo, endocardiumMat);
+
+        epicardium.scale.set(1.05, 1.05, 1.05);
+        endocardium.scale.set(0.95, 0.95, 0.95);
+
+        const heartGroup = new THREE.Group();
+        heartGroup.add(myocardium, epicardium, endocardium);
+        scene.add(heartGroup);
+
+        // 4. ANIMATION LOOP
+        function animate() {
+            requestAnimationFrame(animate);
+            let time = Date.now() * 0.005;
+            let pulse = 1 + Math.sin(time) * 0.1; 
+            
+            // Pulse the whole group together
+            heartGroup.scale.set(pulse, pulse, pulse);
+            
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Handle window resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
